@@ -227,7 +227,7 @@ async function start() {
   ws.initWebSocket(server);
 
   const PORT = process.env.PORT || 3000;
-  server.listen(PORT, () => {
+  server.listen(PORT,"0.0.0.0", () => {
     console.log(`\n📚 Smart Library running at http://localhost:${PORT}`);
     console.log(`🔌 WebSocket: ws://localhost:${PORT}`);
     console.log(`   ESP32 connects to: ws://localhost:${PORT}/?esp32=1\n`);
