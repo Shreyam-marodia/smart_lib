@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f0e0c" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Smart Library</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -21,42 +24,56 @@
       --text:      #e8e0d0;
       --text-dim:  #7a7060;
       --text-mid:  #a89880;
+      --nav-h:     56px;
+      --header-h:  52px;
+      --safe-b:    env(safe-area-inset-bottom, 0px);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    html, body { height: 100%; overflow: hidden; }
 
     body {
       background: var(--bg);
       color: var(--text);
       font-family: 'Inter', sans-serif;
       font-size: 14px;
-      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
     }
 
-    /* ── Layout ── */
+    /* ─── Header ─────────────────────────────────────────────────────── */
     header {
+      height: var(--header-h);
       border-bottom: 1px solid var(--border);
-      padding: 18px 28px;
+      padding: 0 16px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-shrink: 0;
+      padding-top: env(safe-area-inset-top, 0px);
     }
 
     header h1 {
       font-family: 'Playfair Display', serif;
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 600;
-      letter-spacing: 0.01em;
       color: var(--amber);
     }
 
-    header h1 span { color: var(--text-dim); font-weight: 400; font-size: 14px; margin-left: 10px; font-family: 'Inter', sans-serif; }
+    header h1 span {
+      color: var(--text-dim);
+      font-weight: 400;
+      font-size: 12px;
+      margin-left: 8px;
+      font-family: 'Inter', sans-serif;
+    }
 
     #status-bar {
       display: flex;
-      gap: 16px;
+      gap: 10px;
       align-items: center;
-      font-size: 12px;
+      font-size: 11px;
       color: var(--text-dim);
     }
 
@@ -64,104 +81,172 @@
       width: 7px; height: 7px; border-radius: 50%;
       background: var(--red);
       display: inline-block;
-      margin-right: 5px;
+      margin-right: 4px;
+      flex-shrink: 0;
     }
     .status-dot.connected { background: var(--green); }
 
-    main {
-      display: grid;
-      grid-template-columns: 340px 1fr;
-      gap: 0;
-      height: calc(100vh - 61px);
+    #esp32-status { display: none; }
+
+    /* ─── Main content area ───────────────────────────────────────────── */
+    #app {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
     }
 
-    aside {
-      border-right: 1px solid var(--border);
+    /* ─── Desktop: side panel + shelf view ───────────────────────────── */
+    @media (min-width: 700px) {
+      #app { flex-direction: row; }
+
+      #sidebar {
+        width: 340px;
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+
+      #shelf-panel {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px 28px;
+        display: block !important;
+      }
+
+      #mobile-nav { display: none !important; }
+
+      #esp32-status { display: inline; }
+    }
+
+    /* ─── Mobile: full-screen panels + bottom nav ─────────────────────── */
+    @media (max-width: 699px) {
+      #app { position: relative; }
+
+      #sidebar {
+        position: absolute;
+        inset: 0;
+        bottom: calc(var(--nav-h) + var(--safe-b));
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      #shelf-panel {
+        position: absolute;
+        inset: 0;
+        bottom: calc(var(--nav-h) + var(--safe-b));
+        overflow-y: auto;
+        padding: 16px;
+        display: none;
+      }
+
+      #shelf-panel.mobile-active { display: block; }
+      #sidebar.mobile-hidden { display: none; }
+    }
+
+    /* ─── Bottom nav (mobile only) ────────────────────────────────────── */
+    #mobile-nav {
+      height: calc(var(--nav-h) + var(--safe-b));
+      padding-bottom: var(--safe-b);
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      display: flex;
+      flex-shrink: 0;
+    }
+
+    .nav-btn {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      cursor: pointer;
+      color: var(--text-dim);
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      transition: color 0.15s;
+      padding: 6px 0;
     }
 
-    .panel-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-    }
+    .nav-btn.active { color: var(--amber); }
 
-    section.right {
-      padding: 24px 28px;
-      overflow-y: auto;
-    }
+    .nav-btn svg { width: 22px; height: 22px; }
 
-    /* ── Tabs ── */
+    /* ─── Sidebar tabs (desktop) ──────────────────────────────────────── */
     .tabs {
       display: flex;
       border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
     }
 
     .tab {
       flex: 1;
-      padding: 12px 8px;
+      padding: 12px 6px;
       text-align: center;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 500;
       color: var(--text-dim);
       letter-spacing: 0.05em;
       text-transform: uppercase;
-      transition: color 0.15s, border-bottom 0.15s;
       border-bottom: 2px solid transparent;
+      transition: color 0.15s;
     }
 
-    .tab.active {
-      color: var(--amber);
-      border-bottom: 2px solid var(--amber);
-    }
+    .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
 
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
-    /* ── Search ── */
-    .search-wrap {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
+    .panel-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      -webkit-overflow-scrolling: touch;
     }
 
+    /* ─── Inputs ──────────────────────────────────────────────────────── */
     input[type="text"], select, textarea {
       background: var(--surface2);
       border: 1px solid var(--border);
       color: var(--text);
-      padding: 9px 12px;
-      border-radius: 6px;
+      padding: 11px 12px;
+      border-radius: 8px;
       font-family: 'Inter', sans-serif;
-      font-size: 13px;
+      font-size: 16px; /* prevent iOS zoom */
       outline: none;
       transition: border-color 0.15s;
+      width: 100%;
+      -webkit-appearance: none;
     }
 
     input[type="text"]:focus, select:focus, textarea:focus {
       border-color: var(--amber-dim);
     }
 
-    input[type="text"] { flex: 1; }
-    textarea { width: 100%; resize: vertical; min-height: 60px; }
-    select { width: 100%; }
+    textarea { resize: vertical; min-height: 60px; }
 
+    /* ─── Buttons ─────────────────────────────────────────────────────── */
     button {
       background: var(--amber);
       color: #0f0e0c;
       border: none;
-      padding: 9px 16px;
-      border-radius: 6px;
+      padding: 11px 18px;
+      border-radius: 8px;
       font-weight: 600;
-      font-size: 13px;
+      font-size: 14px;
       cursor: pointer;
       transition: opacity 0.15s;
       white-space: nowrap;
+      touch-action: manipulation;
     }
 
-    button:hover { opacity: 0.85; }
+    button:active { opacity: 0.7; }
     button:disabled { opacity: 0.4; cursor: not-allowed; }
 
     button.secondary {
@@ -170,42 +255,47 @@
       border: 1px solid var(--border);
     }
 
-    button.danger {
-      background: var(--red);
-      color: #fff;
+    button.full { width: 100%; }
+
+    /* ─── Search ──────────────────────────────────────────────────────── */
+    .search-wrap {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
     }
 
-    /* ── Result cards ── */
+    .search-wrap input { flex: 1; }
+    .search-wrap button { flex-shrink: 0; }
+
+    /* ─── Result cards ────────────────────────────────────────────────── */
     .result-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 10px;
       padding: 14px 16px;
       margin-bottom: 10px;
       cursor: pointer;
       transition: border-color 0.15s;
+      touch-action: manipulation;
     }
 
-    .result-card:hover { border-color: var(--amber-dim); }
+    .result-card:active { border-color: var(--amber-dim); opacity: 0.85; }
+    @media (hover: hover) { .result-card:hover { border-color: var(--amber-dim); } }
 
     .result-card .title {
       font-family: 'Playfair Display', serif;
       font-size: 16px;
       color: var(--text);
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
     .result-card .author { color: var(--text-mid); font-size: 12px; margin-bottom: 8px; }
 
-    .result-card .meta {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+    .result-card .meta { display: flex; gap: 6px; flex-wrap: wrap; }
 
     .badge {
-      font-size: 11px;
-      padding: 2px 8px;
+      font-size: 10px;
+      padding: 2px 7px;
       border-radius: 4px;
       font-family: 'JetBrains Mono', monospace;
     }
@@ -219,9 +309,16 @@
 
     .reason { font-size: 11px; color: var(--text-dim); margin-top: 6px; font-style: italic; }
 
-    /* ── Register form ── */
+    /* ─── Register form ───────────────────────────────────────────────── */
     .form-group { margin-bottom: 14px; }
-    .form-group label { display: block; font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 5px; }
+    .form-group label {
+      display: block;
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      margin-bottom: 5px;
+    }
 
     .rfid-display {
       font-family: 'JetBrains Mono', monospace;
@@ -229,17 +326,17 @@
       color: var(--amber);
       background: var(--surface2);
       border: 1px solid var(--border);
-      padding: 9px 12px;
-      border-radius: 6px;
+      padding: 11px 12px;
+      border-radius: 8px;
       letter-spacing: 0.1em;
     }
 
-    /* ── Book list ── */
+    /* ─── Book list ───────────────────────────────────────────────────── */
     .book-row {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 10px 0;
+      gap: 10px;
+      padding: 12px 0;
       border-bottom: 1px solid var(--border);
     }
 
@@ -250,133 +347,156 @@
       font-size: 11px;
       color: var(--green);
       background: #0a1a10;
-      padding: 2px 6px;
+      padding: 3px 7px;
       border-radius: 4px;
-      min-width: 42px;
+      min-width: 40px;
       text-align: center;
+      flex-shrink: 0;
     }
 
-    .book-row .info { flex: 1; }
-    .book-row .info .t { font-size: 13px; color: var(--text); }
-    .book-row .info .a { font-size: 11px; color: var(--text-dim); }
+    .book-row .info { flex: 1; min-width: 0; }
+    .book-row .info .t { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .book-row .info .a { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .book-row .actions { display: flex; gap: 6px; }
-    .book-row .actions button { padding: 5px 10px; font-size: 11px; }
+    .book-row .actions { display: flex; gap: 5px; flex-shrink: 0; }
+    .book-row .actions button { padding: 7px 10px; font-size: 11px; }
 
-    /* ── Shelf grid (right panel) ── */
-    #shelf-view h2 {
+    /* ─── Shelf view ──────────────────────────────────────────────────── */
+    #shelf-panel h2 {
       font-family: 'Playfair Display', serif;
       font-size: 20px;
-      margin-bottom: 6px;
-      color: var(--text);
+      margin-bottom: 4px;
     }
 
-    #shelf-view .subtitle { color: var(--text-dim); font-size: 12px; margin-bottom: 24px; }
+    #shelf-panel .subtitle {
+      color: var(--text-dim);
+      font-size: 12px;
+      margin-bottom: 20px;
+    }
 
-    .shelf-block { margin-bottom: 32px; }
+    .shelf-block { margin-bottom: 28px; }
 
     .shelf-block h3 {
-      font-size: 11px;
+      font-size: 10px;
       text-transform: uppercase;
       letter-spacing: 0.1em;
       color: var(--amber);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
-    .shelf-grid {
-      display: grid;
-      gap: 6px;
-    }
+    .shelf-grid { display: grid; gap: 5px; }
 
     .slot {
       aspect-ratio: 1;
-      border-radius: 5px;
+      border-radius: 6px;
       border: 1px solid var(--border);
       background: var(--surface);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: border-color 0.12s, background 0.12s;
+      transition: border-color 0.12s;
       position: relative;
-      overflow: hidden;
+      touch-action: manipulation;
+      min-width: 0;
+      min-height: 0;
     }
 
-    .slot:hover { border-color: var(--amber-dim); }
+    .slot:active { opacity: 0.7; }
+    @media (hover: hover) { .slot:hover { border-color: var(--amber-dim); } }
     .slot.occupied { background: #1a2a1a; border-color: #2a4a2a; }
-    .slot.occupied:hover { border-color: var(--green); }
-    .slot.highlighted { border-color: var(--green); box-shadow: 0 0 8px rgba(74, 158, 107, 0.4); }
+    .slot.highlighted { border-color: var(--green); box-shadow: 0 0 10px rgba(74,158,107,0.5); }
     .slot.blinking { animation: blink 0.5s ease-in-out infinite; }
 
     @keyframes blink {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.2; }
+      50%       { opacity: 0.15; }
     }
 
     .slot .slot-num {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 9px;
+      font-size: 8px;
       color: var(--text-dim);
+      pointer-events: none;
     }
 
     .slot.occupied .slot-num { color: var(--green); }
 
-    .slot-tooltip {
+    /* Mobile slot popup (replaces hover tooltip) */
+    #slot-popup {
       display: none;
-      position: absolute;
-      bottom: calc(100% + 6px);
+      position: fixed;
+      bottom: calc(var(--nav-h) + var(--safe-b) + 12px);
       left: 50%;
       transform: translateX(-50%);
       background: var(--surface2);
       border: 1px solid var(--border);
-      padding: 6px 10px;
-      border-radius: 5px;
-      font-size: 11px;
-      white-space: nowrap;
+      border-radius: 10px;
+      padding: 12px 18px;
+      font-size: 13px;
       color: var(--text);
-      z-index: 10;
+      z-index: 200;
+      white-space: nowrap;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
       pointer-events: none;
     }
 
-    .slot:hover .slot-tooltip { display: block; }
+    #slot-popup.show { display: block; }
 
-    /* ── Notification toast ── */
+    @media (min-width: 700px) {
+      #slot-popup {
+        bottom: 12px;
+      }
+    }
+
+    /* ─── Toast ───────────────────────────────────────────────────────── */
     #toast {
       position: fixed;
-      bottom: 24px;
-      right: 24px;
+      bottom: calc(var(--nav-h) + var(--safe-b) + 12px);
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
       background: var(--surface2);
       border: 1px solid var(--border);
       border-left: 3px solid var(--amber);
-      padding: 12px 18px;
+      padding: 10px 16px;
       border-radius: 8px;
       font-size: 13px;
-      max-width: 320px;
+      white-space: nowrap;
+      max-width: calc(100vw - 32px);
+      overflow: hidden;
+      text-overflow: ellipsis;
       opacity: 0;
-      transform: translateY(10px);
       transition: all 0.2s;
       pointer-events: none;
-      z-index: 100;
+      z-index: 300;
     }
 
-    #toast.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     #toast.green { border-left-color: var(--green); }
     #toast.red   { border-left-color: var(--red); }
     #toast.blue  { border-left-color: var(--blue); }
 
-    /* ── Modal ── */
+    @media (min-width: 700px) {
+      #toast {
+        left: auto;
+        right: 24px;
+        bottom: 24px;
+        transform: translateY(10px);
+        max-width: 320px;
+      }
+      #toast.show { transform: translateY(0); }
+    }
+
+    /* ─── Modal ───────────────────────────────────────────────────────── */
     #modal-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.7);
-      z-index: 50;
-      align-items: center;
+      background: rgba(0,0,0,0.75);
+      z-index: 400;
+      align-items: flex-end;
       justify-content: center;
+      padding: 0;
     }
 
     #modal-overlay.show { display: flex; }
@@ -384,29 +504,37 @@
     #modal {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 28px;
-      width: 400px;
-      max-width: 95vw;
+      border-radius: 16px 16px 0 0;
+      padding: 24px 20px;
+      padding-bottom: calc(24px + var(--safe-b));
+      width: 100%;
+      max-width: 480px;
+    }
+
+    @media (min-width: 700px) {
+      #modal-overlay { align-items: center; }
+      #modal { border-radius: 12px; padding: 28px; max-width: 400px; }
     }
 
     #modal h3 {
       font-family: 'Playfair Display', serif;
       font-size: 18px;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
       color: var(--amber);
     }
 
-    #modal .actions { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; }
+    #modal .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+    #modal .modal-actions button { flex: 1; }
 
+    /* ─── Spinner ─────────────────────────────────────────────────────── */
     .spinner {
-      width: 16px; height: 16px;
+      width: 14px; height: 14px;
       border: 2px solid var(--border);
       border-top-color: var(--amber);
       border-radius: 50%;
       animation: spin 0.6s linear infinite;
       display: inline-block;
-      margin-right: 8px;
+      margin-right: 6px;
       vertical-align: middle;
     }
 
@@ -415,98 +543,133 @@
 </head>
 <body>
 
+<!-- ─── Header ─────────────────────────────────────────────────────────────── -->
 <header>
   <h1>📚 Smart Library <span>Home Edition</span></h1>
   <div id="status-bar">
-    <span><span class="status-dot" id="ws-dot"></span><span id="ws-label">Disconnected</span></span>
-    <span id="esp32-status">ESP32: —</span>
-    <span id="book-count">— books</span>
+    <span><span class="status-dot" id="ws-dot"></span><span id="ws-label">—</span></span>
+    <span id="esp32-status"></span>
+    <span id="book-count"></span>
   </div>
 </header>
 
-<main>
-  <!-- ── Left Panel ── -->
-  <aside>
+<!-- ─── Main ───────────────────────────────────────────────────────────────── -->
+<div id="app">
+
+  <!-- Sidebar (search/register/books) -->
+  <div id="sidebar">
     <div class="tabs">
       <div class="tab active" data-tab="search">Search</div>
       <div class="tab" data-tab="register">Register</div>
       <div class="tab" data-tab="books">All Books</div>
     </div>
 
-    <!-- Search tab -->
+    <!-- Search -->
     <div class="panel-content tab-panel active" id="tab-search">
       <div class="search-wrap">
-        <input type="text" id="search-input" placeholder="Title, author, genre…" />
+        <input type="text" id="search-input" placeholder="Title, author, genre…" autocomplete="off" />
         <button id="search-btn">Find</button>
       </div>
       <div id="search-results"></div>
     </div>
 
-    <!-- Register tab -->
+    <!-- Register -->
     <div class="panel-content tab-panel" id="tab-register">
       <div class="form-group">
         <label>RFID UID</label>
-        <div class="rfid-display" id="rfid-uid-display">— scan a tag —</div>
+        <div class="rfid-display" id="rfid-uid-display">— scan a tag on the ESP32 —</div>
         <input type="hidden" id="reg-rfid" />
       </div>
       <div class="form-group">
         <label>Title</label>
-        <input type="text" id="reg-title" placeholder="Book title" />
+        <input type="text" id="reg-title" placeholder="Book title" autocomplete="off" />
       </div>
       <div class="form-group">
         <label>Author</label>
-        <input type="text" id="reg-author" placeholder="Author name" />
+        <input type="text" id="reg-author" placeholder="Author name" autocomplete="off" />
       </div>
       <div class="form-group">
         <label>Genre</label>
-        <input type="text" id="reg-genre" placeholder="e.g. Science Fiction" />
+        <input type="text" id="reg-genre" placeholder="e.g. Science Fiction" autocomplete="off" />
       </div>
       <div class="form-group">
-        <label>Shelf (optional — auto-assigns if blank)</label>
+        <label>Shelf (auto-assigns if left blank)</label>
         <select id="reg-shelf">
-          <option value="">Auto (least full shelf)</option>
+          <option value="">Auto — least full shelf</option>
         </select>
       </div>
-      <button id="reg-btn" disabled>Register Book</button>
+      <button class="full" id="reg-btn" disabled>Register Book</button>
     </div>
 
-    <!-- All Books tab -->
+    <!-- All Books -->
     <div class="panel-content tab-panel" id="tab-books">
       <div id="books-list"></div>
     </div>
-  </aside>
+  </div>
 
-  <!-- ── Right Panel: Shelf Visualizer ── -->
-  <section class="right" id="shelf-view">
+  <!-- Shelf map panel -->
+  <div id="shelf-panel">
     <h2>Shelf Map</h2>
-    <p class="subtitle">Click any book slot to highlight it. Green = occupied, dim = empty.</p>
+    <p class="subtitle">Tap any slot to see what's there. Blinking = current search result.</p>
     <div id="shelves-container"></div>
-  </section>
-</main>
+  </div>
 
-<!-- Toast -->
+</div>
+
+<!-- ─── Mobile bottom nav ──────────────────────────────────────────────────── -->
+<nav id="mobile-nav">
+  <div class="nav-btn active" data-view="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    Search
+  </div>
+  <div class="nav-btn" data-view="register">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Register
+  </div>
+  <div class="nav-btn" data-view="books">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    </svg>
+    Books
+  </div>
+  <div class="nav-btn" data-view="shelf">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="2" y="3" width="20" height="4" rx="1"/><rect x="2" y="10" width="20" height="4" rx="1"/><rect x="2" y="17" width="20" height="4" rx="1"/>
+    </svg>
+    Map
+  </div>
+</nav>
+
+<!-- ─── Slot popup (mobile tap) ────────────────────────────────────────────── -->
+<div id="slot-popup"></div>
+
+<!-- ─── Toast ──────────────────────────────────────────────────────────────── -->
 <div id="toast"></div>
 
-<!-- Register Modal (triggered from WebSocket new RFID) -->
+<!-- ─── Register modal (triggered by ESP32 RFID scan) ─────────────────────── -->
 <div id="modal-overlay">
   <div id="modal">
     <h3>New Book Detected</h3>
-    <p style="color:var(--text-dim); font-size:13px; margin-bottom:16px;">
-      RFID scanned: <code id="modal-rfid" style="color:var(--amber); font-family:JetBrains Mono"></code>
+    <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px;">
+      RFID: <code id="modal-rfid" style="color:var(--amber);font-family:'JetBrains Mono',monospace"></code>
     </p>
     <div class="form-group">
       <label>Title</label>
-      <input type="text" id="modal-title" placeholder="Book title" />
+      <input type="text" id="modal-title" placeholder="Book title" autocomplete="off" />
     </div>
     <div class="form-group">
       <label>Author</label>
-      <input type="text" id="modal-author" placeholder="Author name" />
+      <input type="text" id="modal-author" placeholder="Author name" autocomplete="off" />
     </div>
     <div class="form-group">
       <label>Genre</label>
-      <input type="text" id="modal-genre" placeholder="e.g. Mystery" />
+      <input type="text" id="modal-genre" placeholder="e.g. Mystery" autocomplete="off" />
     </div>
-    <div class="actions">
+    <div class="modal-actions">
       <button class="secondary" id="modal-cancel">Cancel</button>
       <button id="modal-confirm">Register & Place</button>
     </div>
@@ -514,44 +677,85 @@
 </div>
 
 <script>
-// ─── State ──────────────────────────────────────────────────────────────────
+// ─── State ────────────────────────────────────────────────────────────────────
 let socket = null;
 let shelves = [];
-let books = [];
+let books   = [];
 let highlightedLED = null;
+let slotPopupTimer = null;
 
-// ─── WebSocket ───────────────────────────────────────────────────────────────
+// ─── Mobile nav ───────────────────────────────────────────────────────────────
+const isMobile = () => window.innerWidth < 700;
+
+function setMobileView(view) {
+  if (!isMobile()) return;
+
+  const sidebar     = document.getElementById('sidebar');
+  const shelfPanel  = document.getElementById('shelf-panel');
+
+  document.querySelectorAll('.nav-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.view === view)
+  );
+
+  if (view === 'shelf') {
+    sidebar.classList.add('mobile-hidden');
+    shelfPanel.classList.add('mobile-active');
+  } else {
+    sidebar.classList.remove('mobile-hidden');
+    shelfPanel.classList.remove('mobile-active');
+
+    // Also switch the sidebar tab
+    const tabMap = { search: 'search', register: 'register', books: 'books' };
+    if (tabMap[view]) switchTab(tabMap[view]);
+  }
+}
+
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => setMobileView(btn.dataset.view));
+});
+
+// ─── Sidebar tabs ─────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t =>
+    t.classList.toggle('active', t.dataset.tab === name)
+  );
+  document.querySelectorAll('.tab-panel').forEach(p =>
+    p.classList.toggle('active', p.id === `tab-${name}`)
+  );
+}
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+
+// ─── WebSocket ────────────────────────────────────────────────────────────────
 function connectWS() {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   socket = new WebSocket(`${proto}://${location.host}`);
 
   socket.onopen = () => {
     document.getElementById('ws-dot').classList.add('connected');
-    document.getElementById('ws-label').textContent = 'Connected';
-    toast('Server connected', 'green');
+    document.getElementById('ws-label').textContent = 'Online';
     loadAll();
   };
 
   socket.onclose = () => {
     document.getElementById('ws-dot').classList.remove('connected');
-    document.getElementById('ws-label').textContent = 'Disconnected';
+    document.getElementById('ws-label').textContent = 'Offline';
     setTimeout(connectWS, 3000);
   };
 
   socket.onmessage = (e) => {
-    const msg = JSON.parse(e.data);
-    handleWS(msg);
+    try { handleWS(JSON.parse(e.data)); } catch {}
   };
 }
 
 function handleWS(msg) {
   switch (msg.cmd) {
-    case 'handshake':
-      break;
-
     case 'book_found':
       highlightSlot(msg.book.led_index, 'yellow');
-      toast(`📖 ${msg.book.title} — ${msg.book.shelf_name} R${msg.book.shelf_row+1} C${msg.book.shelf_col+1}`, 'green');
+      toast(`📖 ${msg.book.title} — ${msg.book.shelf_name} R${msg.book.shelf_row+1}C${msg.book.shelf_col+1}`, 'green');
+      if (isMobile()) setMobileView('shelf');
       break;
 
     case 'register_prompt':
@@ -561,41 +765,37 @@ function handleWS(msg) {
     case 'book_moved':
       loadAll();
       highlightSlot(msg.book.led_index, 'green');
-      toast(`Moved: ${msg.book.title} → LED ${msg.book.led_index}`, 'green');
+      toast(`Moved → LED ${msg.book.led_index}`, 'green');
       break;
 
     case 'highlight_book':
       highlightSlot(msg.led_index, msg.color || 'green');
       break;
-
-    case 'esp32_status':
-      document.getElementById('esp32-status').textContent =
-        `ESP32: ${msg.connected ? '🟢 Online' : '🔴 Offline'}`;
-      break;
   }
 }
 
-// ─── Data Loading ─────────────────────────────────────────────────────────────
+// ─── Data ─────────────────────────────────────────────────────────────────────
 async function loadAll() {
-  const [s, b, status] = await Promise.all([
-    fetch('/api/shelves').then(r => r.json()),
-    fetch('/api/books').then(r => r.json()),
-    fetch('/api/status').then(r => r.json()),
-  ]);
+  try {
+    const [s, b, status] = await Promise.all([
+      fetch('/api/shelves').then(r => r.json()),
+      fetch('/api/books').then(r => r.json()),
+      fetch('/api/status').then(r => r.json()),
+    ]);
 
-  shelves = s;
-  books = b;
+    shelves = s; books = b;
 
-  document.getElementById('book-count').textContent = `${books.length} books`;
-  document.getElementById('esp32-status').textContent =
-    `ESP32: ${status.esp32_connected > 0 ? '🟢 Online' : '🔴 Offline'}`;
+    document.getElementById('book-count').textContent = `${books.length} bk`;
+    document.getElementById('esp32-status').textContent =
+      `ESP32: ${status.esp32_connected > 0 ? '🟢' : '🔴'}`;
 
-  renderShelves();
-  renderBooksList();
-  populateShelfSelect();
+    renderShelves();
+    renderBooksList();
+    populateShelfSelect();
+  } catch {}
 }
 
-// ─── Shelf Visualizer ────────────────────────────────────────────────────────
+// ─── Shelf visualizer ─────────────────────────────────────────────────────────
 function renderShelves() {
   const container = document.getElementById('shelves-container');
   container.innerHTML = '';
@@ -606,12 +806,15 @@ function renderShelves() {
   shelves.forEach(shelf => {
     const block = document.createElement('div');
     block.className = 'shelf-block';
-    block.innerHTML = `<h3>${shelf.name} — ${shelf.rows} rows × ${shelf.cols} cols</h3>`;
+
+    const h3 = document.createElement('h3');
+    h3.textContent = `${shelf.name} — ${shelf.rows} × ${shelf.cols}`;
+    block.appendChild(h3);
 
     const grid = document.createElement('div');
     grid.className = 'shelf-grid';
-    grid.style.gridTemplateColumns = `repeat(${shelf.cols}, 1fr)`;
-    grid.style.maxWidth = `${shelf.cols * 44}px`;
+    // Fit grid to container, max ~44px per slot on desktop
+    grid.style.gridTemplateColumns = `repeat(${shelf.cols}, minmax(0, 44px))`;
 
     for (let row = 0; row < shelf.rows; row++) {
       for (let col = 0; col < shelf.cols; col++) {
@@ -621,27 +824,17 @@ function renderShelves() {
         const slot = document.createElement('div');
         slot.className = 'slot' + (book ? ' occupied' : '');
         slot.dataset.led = led;
-        slot.dataset.shelfId = shelf.id;
-        slot.dataset.row = row;
-        slot.dataset.col = col;
 
         const num = document.createElement('div');
         num.className = 'slot-num';
         num.textContent = led;
         slot.appendChild(num);
 
-        if (book) {
-          const tip = document.createElement('div');
-          tip.className = 'slot-tooltip';
-          tip.textContent = `${book.title} · ${book.author}`;
-          slot.appendChild(tip);
-        }
-
         if (highlightedLED === led) {
           slot.classList.add('highlighted', 'blinking');
         }
 
-        slot.addEventListener('click', () => onSlotClick(slot, shelf, row, col, led, book));
+        slot.addEventListener('click', () => onSlotClick(led, row, col, book));
         grid.appendChild(slot);
       }
     }
@@ -651,11 +844,27 @@ function renderShelves() {
   });
 }
 
+function onSlotClick(led, row, col, book) {
+  if (book) {
+    highlightSlot(led, 'green');
+    showSlotPopup(`📖 ${book.title} · ${book.author}`);
+  } else {
+    showSlotPopup(`Empty slot — LED ${led} (R${row+1} C${col+1})`);
+  }
+}
+
+function showSlotPopup(text) {
+  const popup = document.getElementById('slot-popup');
+  popup.textContent = text;
+  popup.classList.add('show');
+  clearTimeout(slotPopupTimer);
+  slotPopupTimer = setTimeout(() => popup.classList.remove('show'), 3000);
+}
+
 function highlightSlot(ledIndex, color) {
-  // Clear previous
-  document.querySelectorAll('.slot.highlighted').forEach(s => {
-    s.classList.remove('highlighted', 'blinking');
-  });
+  document.querySelectorAll('.slot.highlighted').forEach(s =>
+    s.classList.remove('highlighted', 'blinking')
+  );
 
   highlightedLED = ledIndex;
   const slot = document.querySelector(`.slot[data-led="${ledIndex}"]`);
@@ -664,29 +873,21 @@ function highlightSlot(ledIndex, color) {
     slot.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
-  // Auto-clear after 8s
   setTimeout(() => {
     if (highlightedLED === ledIndex) {
       highlightedLED = null;
-      document.querySelectorAll('.slot.highlighted').forEach(s => {
-        s.classList.remove('highlighted', 'blinking');
-      });
+      document.querySelectorAll('.slot.highlighted').forEach(s =>
+        s.classList.remove('highlighted', 'blinking')
+      );
     }
   }, 8000);
 }
 
-function onSlotClick(slotEl, shelf, row, col, led, book) {
-  if (book) {
-    highlightSlot(led, 'green');
-    toast(`📖 ${book.title} — Row ${row+1} Col ${col+1} — LED ${led}`, 'green');
-  }
-}
-
-// ─── Book List ────────────────────────────────────────────────────────────────
+// ─── Book list ────────────────────────────────────────────────────────────────
 function renderBooksList() {
   const container = document.getElementById('books-list');
   if (!books.length) {
-    container.innerHTML = '<p style="color:var(--text-dim);font-size:13px">No books registered yet.</p>';
+    container.innerHTML = '<p style="color:var(--text-dim);padding:8px 0">No books registered yet.</p>';
     return;
   }
 
@@ -698,8 +899,8 @@ function renderBooksList() {
         <div class="a">${b.author} · ${b.genre}</div>
       </div>
       <div class="actions">
-        <button class="secondary" onclick="locateBook(${b.id}, ${b.led_index})">Locate</button>
-        <button class="secondary" onclick="relocateBook(${b.id})">Move</button>
+        <button class="secondary" onclick="locateBook(${b.id},${b.led_index})">📍</button>
+        <button class="secondary" onclick="relocateBook(${b.id})">↕</button>
       </div>
     </div>
   `).join('');
@@ -709,17 +910,18 @@ function locateBook(id, led) {
   highlightSlot(led, 'green');
   const book = books.find(b => b.id === id);
   if (book) toast(`📍 ${book.title} — LED ${led}`, 'green');
+  if (isMobile()) setMobileView('shelf');
 }
 
 async function relocateBook(id) {
   await fetch(`/api/books/${id}/relocate`, { method: 'POST' });
-  toast('Relocation mode started — use buttons on ESP32 to select new slot', 'blue');
+  toast('Relocation mode — use buttons on ESP32', 'blue');
 }
 
 // ─── Search ───────────────────────────────────────────────────────────────────
 document.getElementById('search-btn').addEventListener('click', doSearch);
 document.getElementById('search-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter') doSearch();
+  if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
 });
 
 async function doSearch() {
@@ -728,13 +930,13 @@ async function doSearch() {
 
   const btn = document.getElementById('search-btn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Finding…';
+  btn.innerHTML = '<span class="spinner"></span>';
 
   const container = document.getElementById('search-results');
   container.innerHTML = '';
 
   try {
-    const res = await fetch('/api/search', {
+    const res  = await fetch('/api/search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query }),
@@ -761,7 +963,7 @@ async function doSearch() {
         <div class="author">${m.author}</div>
         <div class="meta">
           <span class="badge genre">${m.genre}</span>
-          <span class="badge shelf">${m.shelf_name ?? 'Shelf'} R${m.shelf_row+1} C${m.shelf_col+1}</span>
+          <span class="badge shelf">${m.shelf_name ?? 'Shelf'} R${m.shelf_row+1}C${m.shelf_col+1}</span>
           <span class="badge led">LED ${m.led_index}</span>
           <span class="badge ${m.confidence}">${m.confidence}</span>
         </div>
@@ -769,12 +971,9 @@ async function doSearch() {
       `;
       card.addEventListener('click', () => {
         highlightSlot(m.led_index, 'green');
-        // Switch to shelf view
-        document.querySelector('[data-tab="search"]').click();
+        if (isMobile()) setMobileView('shelf');
       });
       container.appendChild(card);
-
-      // Auto-highlight top match
       if (i === 0) highlightSlot(m.led_index, 'green');
     });
 
@@ -790,22 +989,19 @@ async function doSearch() {
 document.getElementById('reg-btn').addEventListener('click', registerBook);
 
 async function registerBook() {
-  const rfid = document.getElementById('reg-rfid').value.trim();
-  const title = document.getElementById('reg-title').value.trim();
-  const author = document.getElementById('reg-author').value.trim();
-  const genre = document.getElementById('reg-genre').value.trim();
+  const rfid     = document.getElementById('reg-rfid').value.trim();
+  const title    = document.getElementById('reg-title').value.trim();
+  const author   = document.getElementById('reg-author').value.trim();
+  const genre    = document.getElementById('reg-genre').value.trim();
   const shelf_id = document.getElementById('reg-shelf').value || undefined;
 
-  if (!rfid || !title || !author || !genre) {
-    toast('Fill in all fields first', 'red'); return;
-  }
+  if (!rfid || !title || !author || !genre) { toast('Fill in all fields', 'red'); return; }
 
   const btn = document.getElementById('reg-btn');
-  btn.disabled = true;
-  btn.textContent = 'Registering…';
+  btn.disabled = true; btn.textContent = 'Registering…';
 
   try {
-    const res = await fetch('/api/books/register', {
+    const res  = await fetch('/api/books/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rfid_uid: rfid, title, author, genre, shelf_id }),
@@ -814,12 +1010,11 @@ async function registerBook() {
 
     if (!res.ok) { toast(data.error, 'red'); return; }
 
-    toast(`✅ "${data.book.title}" added → LED ${data.book.led_index}`, 'green');
+    toast(`✅ "${data.book.title}" → LED ${data.book.led_index}`, 'green');
     highlightSlot(data.book.led_index, 'blue');
 
-    // Reset form
     document.getElementById('reg-rfid').value = '';
-    document.getElementById('rfid-uid-display').textContent = '— scan a tag —';
+    document.getElementById('rfid-uid-display').textContent = '— scan a tag on the ESP32 —';
     document.getElementById('reg-title').value = '';
     document.getElementById('reg-author').value = '';
     document.getElementById('reg-genre').value = '';
@@ -829,16 +1024,14 @@ async function registerBook() {
   } catch (err) {
     toast(err.message, 'red');
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Register Book';
+    btn.disabled = false; btn.textContent = 'Register Book';
   }
 }
 
-// ─── Modal (RFID from ESP32) ─────────────────────────────────────────────────
+// ─── Modal ────────────────────────────────────────────────────────────────────
 function openModal(rfid_uid) {
   document.getElementById('modal-rfid').textContent = rfid_uid;
   document.getElementById('modal-overlay').classList.add('show');
-  // Also prefill register tab
   document.getElementById('reg-rfid').value = rfid_uid;
   document.getElementById('rfid-uid-display').textContent = rfid_uid;
   document.getElementById('reg-btn').disabled = false;
@@ -860,7 +1053,7 @@ document.getElementById('modal-confirm').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = 'Registering…';
 
   try {
-    const res = await fetch('/api/books/register', {
+    const res  = await fetch('/api/books/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ rfid_uid, title, author, genre }),
@@ -880,27 +1073,22 @@ document.getElementById('modal-confirm').addEventListener('click', async () => {
   }
 });
 
-// ─── Shelf Select Populate ────────────────────────────────────────────────────
+// Close modal on overlay tap
+document.getElementById('modal-overlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modal-overlay'))
+    document.getElementById('modal-overlay').classList.remove('show');
+});
+
+// ─── Shelf select ─────────────────────────────────────────────────────────────
 function populateShelfSelect() {
   const sel = document.getElementById('reg-shelf');
-  sel.innerHTML = '<option value="">Auto (least full shelf)</option>';
+  sel.innerHTML = '<option value="">Auto — least full shelf</option>';
   shelves.forEach(s => {
     const opt = document.createElement('option');
-    opt.value = s.id;
-    opt.textContent = s.name;
+    opt.value = s.id; opt.textContent = s.name;
     sel.appendChild(opt);
   });
 }
-
-// ─── Tabs ─────────────────────────────────────────────────────────────────────
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    tab.classList.add('active');
-    document.getElementById(`tab-${tab.dataset.tab}`).classList.add('active');
-  });
-});
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
 let toastTimer = null;
