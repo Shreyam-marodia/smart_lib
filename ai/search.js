@@ -1,6 +1,7 @@
-const Anthropic = require("@anthropic-ai/sdk");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+// Initialize the Gemini client using the Railway environment variable
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const SYSTEM_PROMPT = `You are a smart library assistant. Your job is to help users find books in a home library.
 
@@ -39,23 +40,25 @@ Response format:
 If no matches: { "matches": [], "message": "<explanation>" }`;
 
 async function searchBooks(query, bookContext) {
-  const userMessage = `Library contents:\n${bookContext}\n\nUser query: "${query}"`;
-
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1000,
-    system: SYSTEM_PROMPT,
-    messages: [{ role: "user", content: userMessage }],
-  });
-
-  const raw = response.content[0].text.trim();
-
   try {
+    // We use gemini-1.5-flash for speed, and force the output to be JSON
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: { 
+        responseMimeType: "application/json" 
+      },
+      systemInstruction: SYSTEM_PROMPT
+    });
+
+    const userMessage = `Library contents:\n${bookContext}\n\nUser query: "${query}"`;
+
+    const result = await model.generateContent(userMessage);
+    const raw = result.response.text();
+
     return JSON.parse(raw);
-  } catch {
-    // Strip markdown fences if present
-    const clean = raw.replace(/```json|```/g, "").trim();
-    return JSON.parse(clean);
+  } catch (err) {
+    console.error("[Gemini API Error]:", err);
+    throw err;
   }
 }
 
