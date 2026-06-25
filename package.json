@@ -1,0 +1,28 @@
+{
+  "name": "smart_lib",
+  "version": "1.0.0",
+  "description": "A home library system with LLM-powered book search, RFID tagging, and individually addressable LED slot indicators.",
+  "main": "database.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Shreyam-marodia/smart_lib.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Shreyam-marodia/smart_lib/issues"
+  },
+  "homepage": "https://github.com/Shreyam-marodia/smart_lib#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.106.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "sqlite3": "^6.0.1",
+    "ws": "^8.21.0"
+  }
+}
