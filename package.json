@@ -19,7 +19,7 @@
   },
   "homepage": "https://github.com/Shreyam-marodia/smart_lib#readme",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.106.0",
+    "@google/generative-ai": "^0.24.1",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "sql.js": "^1.14.1",
