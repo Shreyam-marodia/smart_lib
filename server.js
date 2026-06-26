@@ -13,6 +13,15 @@ const server = http.createServer(app);
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
+// Explicitly serve the frontend when visiting the root URL
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"), (err) => {
+    if (err) {
+      console.error("Error serving index.html:", err);
+      res.status(500).send("index.html not found in the public folder!");
+    }
+  });
+});
 
 // ─── WebSocket Message Handler ────────────────────────────────────────────────
 
